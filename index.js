@@ -48,6 +48,7 @@ async function run() {
         const bookingsCollection = client.db('doctorsportal').collection('bookings');
         const usersCollection = client.db('doctorsportal').collection('users');
         const doctorsCollection = client.db('doctorsportal').collection('doctors');
+        const paymentCollection = client.db('doctorsPortal').collection('payments');
 
         const verifyAdmin = async (req, res, next) => {
             console.log('inside verifyAdmin', req.decoded.email)
@@ -136,7 +137,24 @@ async function run() {
             res.send({
                 clientSecret: paymentIntent.client_secret,
             })
+        });
+
+        app.post('/payments', async (req,res)=>{
+            const payment = req.body;
+            const result =await paymentCollection.insertOne(payment);
+            const id = payment.bookingId;
+            const filter={_id: ObjectId(id)}
+            const updatedDoc ={
+                $set:{
+                    paid:true,
+                    transactionId: payment.transactionId
+                }
+            }
+            const updatedResult= await bookingsCollection.updateOne(filter, updatedDoc)
+            res.send(result)
         })
+
+
 
         app.get('/jwt', async (req, res) => {
             const email = req.query.email;
